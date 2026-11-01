@@ -1,5 +1,6 @@
-from .logic import add_movie, list_movies, done_movie, get_help
 from .database import init_db
+from .logic import add_movie, done_movie, get_help, list_movies
+
 
 def run() -> None:
     init_db() # Создаем базу при запуске

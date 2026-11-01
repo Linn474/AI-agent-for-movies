@@ -1,5 +1,6 @@
 import sqlite3
 
+
 def get_connection():
     """Создает и возвращает подключение к базе данных SQLite."""
     return sqlite3.connect("movies.db")

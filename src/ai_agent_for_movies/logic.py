@@ -1,5 +1,6 @@
 from .database import get_connection
 
+
 def add_movie(title: str) -> None:
     """Добавляет фильм в базу данных."""
     with get_connection() as conn:
