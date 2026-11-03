@@ -5,6 +5,7 @@ def get_connection():
     """Создает и возвращает подключение к базе данных SQLite."""
     return sqlite3.connect("movies.db")
 
+
 def init_db():
     """Создает таблицу фильмов, если ее еще нет."""
     with get_connection() as conn:
