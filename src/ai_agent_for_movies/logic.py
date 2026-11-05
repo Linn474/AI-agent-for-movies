@@ -41,12 +41,30 @@ def done_movie(movie_id: int) -> None:
         )
 
 
+def delete_movie(movie_id: int) -> None:
+    """Удаляет фильм из базы по его ID."""
+    if movie_id < 1:
+        raise ValueError("ID должен быть положительным числом.")
+
+    with get_connection() as conn:
+        # Проверяем, существует ли фильм
+        movie = conn.execute(
+            "SELECT title FROM movies WHERE id = ?", (movie_id,)
+        ).fetchone()
+        if not movie:
+            raise IndexError(f"Фильма с ID {movie_id} не существует.")
+
+        # Удаляем фильм
+        conn.execute("DELETE FROM movies WHERE id = ?", (movie_id,))
+
+
 def get_help() -> str:
     return """
 Команды:
   add  — добавить фильм
   list — показать фильмы
   done — отметить просмотренным (по ID)
+  delete — удалить фильм (по ID)
   help — справка
   exit — выход
 """

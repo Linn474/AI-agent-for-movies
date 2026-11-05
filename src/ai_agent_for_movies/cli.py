@@ -1,5 +1,5 @@
 from .database import init_db
-from .logic import add_movie, done_movie, get_help, list_movies
+from .logic import add_movie, delete_movie, done_movie, get_help, list_movies
 
 
 def run() -> None:
@@ -40,6 +40,22 @@ def run() -> None:
                     )  # Ловит и буквы вместо ID, и отрицательные числа
                 except IndexError as e:
                     print(f"Ошибка: {e}")  # Ловит несуществующий ID
+                except OverflowError:
+                    print(
+                        "Ошибка: Число слишком большое для базы данных. Введите ID поменьше."
+                    )  # Ловит неподходящее значение для базы данных
+
+            elif command == "delete":
+                try:
+                    movie_id = int(input("Введите ID фильма для удаления > "))
+                    delete_movie(movie_id)
+                    print(f"Фильм с ID {movie_id} удален.")
+                except ValueError as e:
+                    print(f"Ошибка: {e}")
+                except IndexError as e:
+                    print(f"Ошибка: {e}")
+                except OverflowError:
+                    print("Ошибка: Число слишком большое для базы данных.")
 
             elif command == "help":
                 print(get_help())
