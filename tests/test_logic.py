@@ -1,6 +1,6 @@
 import pytest
 
-from src.ai_agent_for_movies.cli import run
+from src.ai_agent_for_movies.cli import StorageError, run
 from src.ai_agent_for_movies.database import get_connection, init_db
 from src.ai_agent_for_movies.logic import (
     add_movie,
@@ -18,10 +18,6 @@ def setup_test_db():
     # После теста очищаем базу
     with get_connection() as conn:
         conn.execute("DELETE FROM movies")
-
-
-class StorageError(Exception):
-    """Своя ошибка для тестов."""
 
 
 # тест логики

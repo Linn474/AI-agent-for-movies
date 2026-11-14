@@ -4,6 +4,10 @@ from .database import init_db
 from .logic import add_movie, delete_movie, done_movie, get_help, list_movies
 
 
+class StorageError(Exception):
+    """Базовая ошибка хранилища."""
+
+
 def run() -> None:
     init_db()
     print("Добро пожаловать в ИИ-агент 'Помощник по фильмам'!")
@@ -74,7 +78,7 @@ def run() -> None:
             print("\nВыход из программы.")
             break
 
-        except sqlite3.Error as e:
-            # Ловит ошибки работы с базой данных (блокировка, повреждение файла и т.д.)
+        except (sqlite3.Error, StorageError) as e:
+            # Ловит ошибки базы данных и кастомные ошибки
             print(f"Ошибка работы с хранилищем: {e}")
             print("Программа продолжает работу.")
