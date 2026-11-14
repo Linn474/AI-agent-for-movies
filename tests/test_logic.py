@@ -20,6 +20,10 @@ def setup_test_db():
         conn.execute("DELETE FROM movies")
 
 
+class StorageError(Exception):
+    """Своя ошибка для тестов."""
+
+
 # тест логики
 
 
@@ -96,7 +100,6 @@ def test_cli_invalid_input(monkeypatch, capsys):
     run()
 
     captured = capsys.readouterr()
-    # ИСПРАВЛЕНО: ловим английский текст ошибки, который выдает int()
     assert "invalid literal for int()" in captured.out
     assert "Неизвестная команда" in captured.out
 
@@ -195,20 +198,22 @@ def test_cli_keyboard_interrupt(monkeypatch, capsys):
     captured = capsys.readouterr()
     assert "Выход из программы." in captured.out
 
+
 def test_cli_unexpected_error(monkeypatch, capsys):
     """Проверяет обработку непредвиденной ошибки (except Exception)."""
+
     # Имитируем ошибку в базе данных, подменяя функцию list_movies
     def mock_error():
-        raise Exception("Тестовая ошибка хранилища")
-    
+        raise StorageError("Тестовая ошибка хранилища")
+
     # Подменяем функцию list_movies на "сломанную"
-    monkeypatch.setattr('src.ai_agent_for_movies.cli.list_movies', mock_error)
-    
+    monkeypatch.setattr("src.ai_agent_for_movies.cli.list_movies", mock_error)
+
     inputs = iter(["list", "exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
     run()
-    
+
     captured = capsys.readouterr()
     # Проверяем, что программа не упала, а вывела наше сообщение
     assert "Ошибка работы с хранилищем" in captured.out

@@ -1,3 +1,5 @@
+import sqlite3
+
 from .database import init_db
 from .logic import add_movie, delete_movie, done_movie, get_help, list_movies
 
@@ -71,7 +73,8 @@ def run() -> None:
         except KeyboardInterrupt:
             print("\nВыход из программы.")
             break
-        
-        except Exception as e:
-            print(f"Ошибка работы с хранилищем или непредвиденная ошибка: {e}")
+
+        except sqlite3.Error as e:
+            # Ловит ошибки работы с базой данных (блокировка, повреждение файла и т.д.)
+            print(f"Ошибка работы с хранилищем: {e}")
             print("Программа продолжает работу.")
