@@ -71,3 +71,7 @@ def run() -> None:
         except KeyboardInterrupt:
             print("\nВыход из программы.")
             break
+        
+        except Exception as e:
+            print(f"Ошибка работы с хранилищем или непредвиденная ошибка: {e}")
+            print("Программа продолжает работу.")
