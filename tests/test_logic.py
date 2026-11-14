@@ -1,7 +1,14 @@
 import pytest
-from src.ai_agent_for_movies.logic import add_movie, list_movies, done_movie, delete_movie
-from src.ai_agent_for_movies.database import init_db, get_connection
+
 from src.ai_agent_for_movies.cli import run
+from src.ai_agent_for_movies.database import get_connection, init_db
+from src.ai_agent_for_movies.logic import (
+    add_movie,
+    delete_movie,
+    done_movie,
+    list_movies,
+)
+
 
 @pytest.fixture(autouse=True)
 def setup_test_db():
@@ -12,7 +19,9 @@ def setup_test_db():
     with get_connection() as conn:
         conn.execute("DELETE FROM movies")
 
-# --- ТЕСТЫ ЛОГИКИ ---
+
+# тест логики
+
 
 def test_add_movie():
     add_movie("Тестовый фильм")
@@ -21,10 +30,12 @@ def test_add_movie():
     assert movies[0][1] == "Тестовый фильм"
     assert movies[0][2] == "В планах"
 
+
 def test_add_duplicate_movie():
     add_movie("Дюна")
     with pytest.raises(ValueError):
         add_movie("Дюна")
+
 
 def test_done_movie():
     add_movie("Интерстеллар")
@@ -32,9 +43,11 @@ def test_done_movie():
     done_movie(movie_id)
     assert list_movies()[0][2] == "Просмотрено"
 
+
 def test_done_nonexistent_movie():
     with pytest.raises(IndexError):
         done_movie(999)
+
 
 def test_delete_movie():
     add_movie("Удаляемый фильм")
@@ -42,133 +55,142 @@ def test_delete_movie():
     delete_movie(movie_id)
     assert len(list_movies()) == 0
 
-# --- ТЕСТЫ ИНТЕРФЕЙСА (cli.py) ---
+
+# тест CLI
+
 
 def test_cli_add_and_list(monkeypatch, capsys):
     # Имитируем ввод: add -> "Дюна" -> list -> exit
     inputs = iter(["add", "Дюна", "list", "exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    
-    run() # Запускаем программу
-    
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
+    run()  # Запускаем программу
+
     captured = capsys.readouterr()
     assert "Фильм 'Дюна' добавлен." in captured.out
     # Проверяем, что в выводе есть название фильма и его статус, не привязываясь к цифре
     assert "Дюна [В планах]" in captured.out
+
 
 def test_cli_delete(monkeypatch, capsys):
     # Сначала добавим фильм
     add_movie("Фильм для удаления")
     # Узнаем, какой ID ему присвоила база
     movie_id = list_movies()[0][0]
-    
+
     # Передаем этот ID в программу
     inputs = iter(["delete", str(movie_id), "exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
     run()
-    
+
     captured = capsys.readouterr()
     assert f"Фильм с ID {movie_id} удален." in captured.out
+
 
 def test_cli_invalid_input(monkeypatch, capsys):
     # Имитируем ввод: done -> "abc" (ошибка) -> неизвестная команда -> exit
     inputs = iter(["done", "abc", "some_command", "exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
     run()
-    
+
     captured = capsys.readouterr()
     # ИСПРАВЛЕНО: ловим английский текст ошибки, который выдает int()
     assert "invalid literal for int()" in captured.out
     assert "Неизвестная команда" in captured.out
 
+
 def test_cli_overflow_error(monkeypatch, capsys):
     # Имитируем ввод огромного числа
     inputs = iter(["done", "999999999999999999999999", "exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
     run()
-    
+
     captured = capsys.readouterr()
     assert "Число слишком большое" in captured.out
+
 
 def test_cli_empty_title(monkeypatch, capsys):
     # Проверяем пустой ввод при добавлении
     inputs = iter(["add", "", "exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+
     run()
-    
+
     captured = capsys.readouterr()
     assert "Название не может быть пустым." in captured.out
-    
+
+
 def test_add_empty_title():
     """Тест добавления пустого названия (проверка на ошибку)."""
     with pytest.raises(ValueError, match="Название не может быть пустым."):
         add_movie("")
 
+
 def test_add_duplicate_via_cli(monkeypatch, capsys):
     """Тест добавления дубликата через интерфейс."""
-    add_movie("Дюна") # Добавляем первый раз напрямую
+    add_movie("Дюна")  # Добавляем первый раз напрямую
     inputs = iter(["add", "Дюна", "exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
     run()
     captured = capsys.readouterr()
     assert "Фильм 'Дюна' уже есть в вашем списке." in captured.out
 
-def test_cli_list_empty(monkeypatch, capsys):
-    """Тест вывода пустого списка."""
-    inputs = iter(["list", "exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
-    run()
-    captured = capsys.readouterr()
-    assert "Список фильмов пуст." in captured.out
 
 def test_done_negative_id():
     """Тест отрицательного ID."""
     with pytest.raises(ValueError, match="ID должен быть положительным числом."):
         done_movie(-1)
 
+
 def test_cli_help(monkeypatch, capsys):
     """Тест вывода справки."""
     inputs = iter(["help", "exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
     run()
     captured = capsys.readouterr()
     assert "Команды:" in captured.out
 
+
 def test_main_file(monkeypatch):
     """Тест запуска через файл __main__.py."""
     inputs = iter(["exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
     import src.ai_agent_for_movies.__main__ as main_module
+
     # Просто проверяем, что импорт и вызов не падают
     main_module.run()
-    
+
+
 def test_cli_list_empty(monkeypatch, capsys):
     """Проверяет ветку, когда список фильмов пуст."""
     inputs = iter(["list", "exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
     run()
     captured = capsys.readouterr()
     assert "Список фильмов пуст." in captured.out
+
 
 def test_cli_delete_command(monkeypatch, capsys):
     """Проверяет команду delete именно через интерфейс."""
     add_movie("Фильм на удаление")
     movie_id = list_movies()[0][0]
-    
+
     inputs = iter(["delete", str(movie_id), "exit"])
-    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
     run()
     captured = capsys.readouterr()
     assert f"Фильм с ID {movie_id} удален." in captured.out
 
+
 def test_cli_keyboard_interrupt(monkeypatch, capsys):
     """Проверяет обработку Ctrl+C."""
     # При вводе команды выбрасываем KeyboardInterrupt (как будто нажали Ctrl+C)
-    monkeypatch.setattr('builtins.input', lambda _: (_ for _ in ()).throw(KeyboardInterrupt))
+    monkeypatch.setattr(
+        "builtins.input", lambda _: (_ for _ in ()).throw(KeyboardInterrupt)
+    )
     run()
     captured = capsys.readouterr()
     assert "Выход из программы." in captured.out
