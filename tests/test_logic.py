@@ -1,23 +1,31 @@
 import pytest
+import os
+import src.ai_agent_for_movies.database as db
 
 from src.ai_agent_for_movies.cli import StorageError, run
 from src.ai_agent_for_movies.database import get_connection, init_db
 from src.ai_agent_for_movies.logic import (
-    add_movie,
-    delete_movie,
-    done_movie,
-    list_movies,
+    add_movie, delete_movie, done_movie, list_movies,
 )
 
-
 @pytest.fixture(autouse=True)
-def setup_test_db():
-    # Перед тестом создаем базу
+def setup_test_db(monkeypatch):
+    # Подменяем имя базы данных на тестовое
+    monkeypatch.setattr(db, "DB_NAME", "test_movies.db")
+    
+    # Создаем тестовую базу
     init_db()
+    
     yield
-    # После теста очищаем базу
-    with get_connection() as conn:
-        conn.execute("DELETE FROM movies")
+    
+    import gc
+    gc.collect() 
+
+    if os.path.exists("test_movies.db"):
+        try:
+            os.remove("test_movies.db")
+        except PermissionError:
+            pass
 
 
 # тест логики
@@ -214,3 +222,25 @@ def test_cli_unexpected_error(monkeypatch, capsys):
     # Проверяем, что программа не упала, а вывела наше сообщение
     assert "Ошибка работы с хранилищем" in captured.out
     assert "Программа продолжает работу." in captured.out
+
+
+def test_cli_broken_db(monkeypatch, capsys, tmp_path):
+    """Проверяет обработку ошибки при поврежденной базе данных."""
+    # Создаем битый файл базы данных во временной папке
+    bad_db = tmp_path / "broken.db"
+    bad_db.write_text("broken sqlite database")
+    
+    # Подменяем путь к базе данных в database.py на этот битый файл
+    monkeypatch.setattr("src.ai_agent_for_movies.database.DB_NAME", str(bad_db))
+    
+    # Имитируем ввод (он не должен понадобиться, так как программа должна упасть)
+    inputs = iter(["exit"])
+    monkeypatch.setattr("builtins.input", lambda _: next(inputs))
+    
+    # Запускаем программу
+    run()
+    
+    captured = capsys.readouterr()
+    # Проверяем, что программа вежливо сообщила об ошибке
+    assert "Критическая ошибка" in captured.out
+    assert "не удалось открыть базу данных" in captured.out
