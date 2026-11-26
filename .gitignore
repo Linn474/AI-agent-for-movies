@@ -3,4 +3,7 @@ __pycache__/
 *.pyc
 .ruff_cache/
 movies.db
+.coverage
+htmlcov/
+.pytest_cache/
 .vscode/

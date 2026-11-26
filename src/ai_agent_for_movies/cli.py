@@ -1,9 +1,21 @@
+import sqlite3
+
 from .database import init_db
 from .logic import add_movie, delete_movie, done_movie, get_help, list_movies
 
 
+class StorageError(Exception):
+    """Базовая ошибка хранилища."""
+
+
 def run() -> None:
-    init_db()
+    try:
+        init_db()
+    except sqlite3.DatabaseError as e:
+        print(f"Критическая ошибка: не удалось открыть базу данных. {e}")
+        print("Проверьте файл movies.db.")
+        return  # Завершаем работу функции, программа закроется
+
     print("Добро пожаловать в ИИ-агент 'Помощник по фильмам'!")
     print(get_help())
 
@@ -71,3 +83,8 @@ def run() -> None:
         except KeyboardInterrupt:
             print("\nВыход из программы.")
             break
+
+        except (sqlite3.Error, StorageError) as e:
+            # Ловит ошибки базы данных и кастомные ошибки
+            print(f"Ошибка работы с хранилищем: {e}")
+            print("Программа продолжает работу.")
