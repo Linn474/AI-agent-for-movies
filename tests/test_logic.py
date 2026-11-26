@@ -1,10 +1,8 @@
-import os
+import sqlite3
 
 import pytest
 
-import src.ai_agent_for_movies.database as db
 from src.ai_agent_for_movies.cli import StorageError, run
-from src.ai_agent_for_movies.database import init_db
 from src.ai_agent_for_movies.logic import (
     add_movie,
     delete_movie,
@@ -14,24 +12,33 @@ from src.ai_agent_for_movies.logic import (
 
 
 @pytest.fixture(autouse=True)
-def setup_test_db(monkeypatch):
-    # Подменяем имя базы данных на тестовое
-    monkeypatch.setattr(db, "DB_NAME", "test_movies.db")
+def setup_test_db(monkeypatch, tmp_path):
+    # tmp_path — это уникальная временная папка, которую создает pytest для каждого теста
+    test_db_path = tmp_path / "test_movies.db"
 
-    # Создаем тестовую базу
-    init_db()
+    # Создаем функцию подключения к этой временной базе
+    def mock_get_connection():
+        return sqlite3.connect(test_db_path)
+
+    # Подменяем get_connection во всех модулях
+    monkeypatch.setattr(
+        "src.ai_agent_for_movies.database.get_connection", mock_get_connection
+    )
+    monkeypatch.setattr(
+        "src.ai_agent_for_movies.logic.get_connection", mock_get_connection
+    )
+
+    # Создаем таблицу
+    with sqlite3.connect(test_db_path) as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS movies (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'В планах'
+            )
+        """)
 
     yield
-
-    import gc
-
-    gc.collect()
-
-    if os.path.exists("test_movies.db"):
-        try:
-            os.remove("test_movies.db")
-        except PermissionError:
-            pass
 
 
 # тест логики
@@ -236,8 +243,12 @@ def test_cli_broken_db(monkeypatch, capsys, tmp_path):
     bad_db = tmp_path / "broken.db"
     bad_db.write_text("broken sqlite database")
 
-    # Подменяем путь к базе данных в database.py на этот битый файл
-    monkeypatch.setattr("src.ai_agent_for_movies.database.DB_NAME", str(bad_db))
+    # Создаем функцию, которая выбрасывает ошибку DatabaseError
+    def mock_init_db():
+        raise sqlite3.DatabaseError("file is not a database")
+
+    # Подменяем init_db в cli.py на нашу "сломанную" функцию
+    monkeypatch.setattr("src.ai_agent_for_movies.cli.init_db", mock_init_db)
 
     # Имитируем ввод (он не должен понадобиться, так как программа должна упасть)
     inputs = iter(["exit"])

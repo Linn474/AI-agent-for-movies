@@ -44,8 +44,8 @@
 * Запуск тестов: 
   `uv run pytest`
 * Запуск тестов с измерением покрытия:
-  `uv run pytest --cov=src --cov-report=term-missing`
-Текущее покрытие строк кода составляет **88%**
+  `uv run pytest --cov=src.ai_agent_for_movies.logic --cov=src.ai_agent_for_movies.database --cov-report=term-missing`
+Текущее покрытие строк кода составляет **92%**
 ### Проверка качества кода:
 В проекте настроены линтер и форматтер `ruff` (он уже есть в зависимостях, отдельно устанавливать не нужно).
 * Запуск линтера (поиск ошибок): `uv run ruff check .`
