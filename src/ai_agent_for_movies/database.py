@@ -1,11 +1,12 @@
 import sqlite3
-import os
 
 # По умолчанию используем movies.db, но тесты смогут это переопределить
 DB_NAME = "movies.db"
 
+
 def get_connection():
     return sqlite3.connect(DB_NAME)
+
 
 def init_db():
     with get_connection() as conn:

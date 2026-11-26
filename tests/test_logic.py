@@ -1,25 +1,31 @@
-import pytest
 import os
-import src.ai_agent_for_movies.database as db
 
+import pytest
+
+import src.ai_agent_for_movies.database as db
 from src.ai_agent_for_movies.cli import StorageError, run
-from src.ai_agent_for_movies.database import get_connection, init_db
+from src.ai_agent_for_movies.database import init_db
 from src.ai_agent_for_movies.logic import (
-    add_movie, delete_movie, done_movie, list_movies,
+    add_movie,
+    delete_movie,
+    done_movie,
+    list_movies,
 )
+
 
 @pytest.fixture(autouse=True)
 def setup_test_db(monkeypatch):
     # Подменяем имя базы данных на тестовое
     monkeypatch.setattr(db, "DB_NAME", "test_movies.db")
-    
+
     # Создаем тестовую базу
     init_db()
-    
+
     yield
-    
+
     import gc
-    gc.collect() 
+
+    gc.collect()
 
     if os.path.exists("test_movies.db"):
         try:
@@ -229,17 +235,17 @@ def test_cli_broken_db(monkeypatch, capsys, tmp_path):
     # Создаем битый файл базы данных во временной папке
     bad_db = tmp_path / "broken.db"
     bad_db.write_text("broken sqlite database")
-    
+
     # Подменяем путь к базе данных в database.py на этот битый файл
     monkeypatch.setattr("src.ai_agent_for_movies.database.DB_NAME", str(bad_db))
-    
+
     # Имитируем ввод (он не должен понадобиться, так как программа должна упасть)
     inputs = iter(["exit"])
     monkeypatch.setattr("builtins.input", lambda _: next(inputs))
-    
+
     # Запускаем программу
     run()
-    
+
     captured = capsys.readouterr()
     # Проверяем, что программа вежливо сообщила об ошибке
     assert "Критическая ошибка" in captured.out

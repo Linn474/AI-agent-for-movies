@@ -6,7 +6,8 @@ from .logic import add_movie, delete_movie, done_movie, get_help, list_movies
 
 class StorageError(Exception):
     """Базовая ошибка хранилища."""
- 
+
+
 def run() -> None:
     try:
         init_db()
